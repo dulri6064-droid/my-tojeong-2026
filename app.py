@@ -128,21 +128,51 @@ if st.button("📜 나의 2026년 운세 확인하기", use_container_width=True
             
             final_code = f"{upper}{middle}{lower}"
             
+           # ... (앞부분 코드는 그대로) ...
+            
             # 4. 결과 출력
             result_row = df[df['code'] == final_code]
             
             st.success(f"🎉 분석 완료! {name}님은 [음력 {lunar_month}월 {lunar_day}일]생으로 변환되었습니다.")
-            st.markdown("### 🔮 당신의 2026년 점괘")
+            st.markdown("### 🔮 당신의 2026년 총운")
             
             if not result_row.empty:
                 title = result_row.iloc[0]['title']
                 content = result_row.iloc[0]['content']
+                
+                # 메인 결과 박스
                 st.markdown(f"""
                     <div class="result-box">
                         <h3>{title}</h3>
                         <p style="font-size:1.1rem; line-height:1.6;">{content}</p>
                     </div>
                 """, unsafe_allow_html=True)
-                # 점괘 코드 출력 부분은 삭제했습니다.
+
+                # ============================================================
+                # [추가된 부분] 월별 운세 (접었다 펴기 기능)
+                # ============================================================
+                st.write("") # 빈칸 띄우기
+                with st.expander("📅 2026년 월별 운세 자세히 보기 (클릭)"):
+                    st.info("※ 음력 기준 월별 운세입니다.")
+                    
+                    # 탭으로 12달을 깔끔하게 정리하거나, 리스트로 보여줌
+                    # 여기서는 보기 좋게 2단으로 나누어 보여줌
+                    m_col1, m_col2 = st.columns(2)
+                    
+                    # 엑셀에 month_1 ~ month_12 컬럼이 있다고 가정
+                    try:
+                        row = result_row.iloc[0]
+                        for i in range(1, 13):
+                            month_text = row[f'month_{i}']
+                            # 1~6월은 왼쪽, 7~12월은 오른쪽
+                            if i <= 6:
+                                with m_col1:
+                                    st.markdown(f"**{i}월:** {month_text}")
+                            else:
+                                with m_col2:
+                                    st.markdown(f"**{i}월:** {month_text}")
+                    except:
+                        st.warning("월별 데이터가 아직 준비되지 않았습니다.")
+
             else:
                 st.error(f"죄송합니다. 결과 코드 [{final_code}]에 해당하는 내용이 엑셀에 없습니다.")
