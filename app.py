@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 # --------------------------------------------------------------------------
-# [1] 기본 설정 및 디자인 (핵폭탄급 투명망토 적용 💣)
+# [1] 기본 설정 및 디자인 (강력한 투명망토 💣)
 # --------------------------------------------------------------------------
 st.set_page_config(
     page_title="2026 신년 운세",
@@ -13,13 +13,19 @@ st.set_page_config(
     layout="centered"
 )
 
-# 🎨 Streamlit 마크, 풋터, 헤더 강제 삭제 코드
+# 🎨 Streamlit 마크, 풋터, 헤더, 모바일 뱃지까지 강제 삭제
 hide_streamlit_style = """
             <style>
+            /* 헤더와 풋터 숨기기 */
             header {visibility: hidden !important;}
             [data-testid="stHeader"] {display: none !important;}
             footer {visibility: hidden !important; display: none !important;}
             [data-testid="stFooter"] {display: none !important;}
+            
+            /* 모바일에서 뜨는 뱃지 숨기기 */
+            .viewerBadge_container__1QSob {display: none !important;}
+            
+            /* 화면 여백 조정 */
             .block-container {
                 padding-top: 1rem !important;
                 padding-bottom: 5rem !important;
@@ -29,7 +35,7 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# 화면 글씨 디자인
+# 글씨 디자인
 st.markdown("""
     <style>
     .main-title { font-size: 2.2rem; color: #FF4B4B; text-align: center; font-weight: bold; margin-bottom: 10px; }
@@ -72,7 +78,7 @@ def load_data():
 df = load_data()
 
 # --------------------------------------------------------------------------
-# [3] 화면 구성
+# [3] 화면 구성 (입력란)
 # --------------------------------------------------------------------------
 st.markdown('<div class="main-title">🐎 2026 토정비결</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">병오년(丙午年), 당신의 운명을 확인하세요.<br>(음력/양력/시간 정밀 분석)</div>', unsafe_allow_html=True)
@@ -87,8 +93,10 @@ with col_img:
 with col_input:
     name = st.text_input("성함", placeholder="예: 홍길동")
     
+    # 1. 양력/음력 선택
     calendar_type = st.radio("생년월일 구분", ["양력", "음력"], horizontal=True)
     
+    # 2. 날짜 입력
     if calendar_type == "양력":
         birth_date = st.date_input(
             "양력 생년월일",
@@ -100,5 +108,71 @@ with col_input:
         input_year = birth_date.year
         input_month = birth_date.month
         input_day = birth_date.day
+        
+    else: # 음력 (여기가 문제였던 부분입니다! 완벽하게 고쳤습니다)
+        c1, c2, c3 = st.columns(3) # <-- 이 줄이 꼭 있어야 합니다!
+        with c1:
+            input_year = st.number_input("년(Year)", 1930, 2025, 1975)
+        with c2:
+            input_month = st.number_input("월(Month)", 1, 12, 1)
+        with c3:
+            input_day = st.number_input("일(Day)", 1, 30, 15)
+        
+        is_leap_month = st.checkbox("윤달(Leap Month) 입니까?")
+
+    # 3. 태어난 시
+    time_options = [
+        "모름",
+        "자시 (23:00 ~ 01:00)", "축시 (01:00 ~ 03:00)", "인시 (03:00 ~ 05:00)",
+        "묘시 (05:00 ~ 07:00)", "진시 (07:00 ~ 09:00)", "사시 (09:00 ~ 11:00)",
+        "오시 (11:00 ~ 13:00)", "미시 (13:00 ~ 15:00)", "신시 (15:00 ~ 17:00)",
+        "유시 (17:00 ~ 19:00)", "술시 (19:00 ~ 21:00)", "해시 (21:00 ~ 23:00)"
+    ]
+    birth_time = st.selectbox("태어난 시 (선택)", time_options)
+
+# --------------------------------------------------------------------------
+# [4] 결과 출력
+# --------------------------------------------------------------------------
+if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
+    if df is None:
+        st.error("⚠️ 데이터 파일(db.xlsx)이 없습니다.")
+    elif not name:
+        st.warning("성함을 입력해주세요.")
     else:
-        c1, c2, c3
+        with st.spinner('사주를 분석하고 점괘를 뽑는 중입니다...'):
+            time.sleep(1.0)
+            
+            calendar = KoreanLunarCalendar()
+            if calendar_type == "양력":
+                calendar.setSolarDate(input_year, input_month, input_day)
+                lunar_year = calendar.lunarYear
+                lunar_month = calendar.lunarMonth
+                lunar_day = calendar.lunarDay
+                display_msg = f"양력 {input_year}.{input_month}.{input_day}"
+            else:
+                lunar_year = input_year
+                lunar_month = input_month
+                lunar_day = input_day
+                leap_msg = "(윤달)" if is_leap_month else ""
+                display_msg = f"음력 {input_year}.{input_month}.{input_day} {leap_msg}"
+            
+            age = 2026 - input_year + 1
+            upper = (age + VAR_YEAR_NUM) % 8
+            if upper == 0: upper = 8
+            
+            calc_month = lunar_month 
+            if calc_month <= 12: m_const = MONTH_CONSTANTS[calc_month]
+            else: m_const = 1
+            
+            middle = (calc_month + m_const) % 6
+            if middle == 0: middle = 6
+            
+            lower = (lunar_day + 1) % 3
+            if lower == 0: lower = 3
+            
+            final_code = f"{upper}{middle}{lower}"
+            result_row = df[df['code'] == final_code]
+            
+            st.success(f"✅ {name}님 사주: [{display_msg}] / [{birth_time}]")
+            
+            if birth_time in TIME_LUCK:
