@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 # --------------------------------------------------------------------------
-# [1] 기본 설정 및 디자인 (강력한 투명망토 💣)
+# [1] 기본 설정 및 디자인 (마크 숨기기 최신 코드)
 # --------------------------------------------------------------------------
 st.set_page_config(
     page_title="2026 신년 운세",
@@ -13,24 +13,22 @@ st.set_page_config(
     layout="centered"
 )
 
-# 🎨 Streamlit 마크, 풋터, 헤더, 모바일 뱃지까지 강제 삭제
+# 🎨 Streamlit 마크, 풋터, 헤더 숨기기 (가장 강력한 설정)
 hide_streamlit_style = """
             <style>
-            /* 헤더와 풋터 숨기기 */
-            header {visibility: hidden !important;}
-            [data-testid="stHeader"] {display: none !important;}
-            footer {visibility: hidden !important; display: none !important;}
-            [data-testid="stFooter"] {display: none !important;}
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            .stApp > header {display: none;}
             
-            /* 모바일에서 뜨는 뱃지 숨기기 */
-            .viewerBadge_container__1QSob {display: none !important;}
+            /* 모바일 하단 뱃지 숨기기 시도 */
+            div[data-testid="stDecoration"] {display:none;}
+            div[class^="viewerBadge"] {display: none !important;}
             
-            /* 화면 여백 조정 */
             .block-container {
                 padding-top: 1rem !important;
                 padding-bottom: 5rem !important;
             }
-            #MainMenu {visibility: hidden !important; display: none !important;}
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -109,8 +107,10 @@ with col_input:
         input_month = birth_date.month
         input_day = birth_date.day
         
-    else: # 음력 (여기가 문제였던 부분입니다! 완벽하게 고쳤습니다)
-        c1, c2, c3 = st.columns(3) # <-- 이 줄이 꼭 있어야 합니다!
+    else: # 음력 선택 시
+        # [중요] 여기가 아까 에러났던 부분입니다. 확실하게 고쳤습니다!
+        c1, c2, c3 = st.columns(3) 
+        
         with c1:
             input_year = st.number_input("년(Year)", 1930, 2025, 1975)
         with c2:
@@ -140,7 +140,7 @@ if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
         st.warning("성함을 입력해주세요.")
     else:
         with st.spinner('사주를 분석하고 점괘를 뽑는 중입니다...'):
-            time.sleep(1.0)
+            time.sleep(1.0) 
             
             calendar = KoreanLunarCalendar()
             if calendar_type == "양력":
@@ -176,3 +176,16 @@ if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
             st.success(f"✅ {name}님 사주: [{display_msg}] / [{birth_time}]")
             
             if birth_time in TIME_LUCK:
+                time_msg = TIME_LUCK[birth_time]
+                st.info(f"🕰️ **[태어난 시 풀이]** {time_msg}")
+            
+            st.markdown("### 🔮 당신의 2026년 운세")
+            
+            if not result_row.empty:
+                title = result_row.iloc[0]['title']
+                content = result_row.iloc[0]['content']
+                
+                st.markdown(f"""
+                    <div class="result-box">
+                        <h3>{title}</h3>
+                        <p style
