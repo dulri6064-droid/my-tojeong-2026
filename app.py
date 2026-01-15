@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 # --------------------------------------------------------------------------
-# [1] 기본 설정 및 디자인 (투명망토 적용됨)
+# [1] 기본 설정 및 디자인 (강력한 투명망토 적용)
 # --------------------------------------------------------------------------
 st.set_page_config(
     page_title="2026 신년 운세",
@@ -13,18 +13,25 @@ st.set_page_config(
     layout="centered"
 )
 
-# 🎨 Streamlit 마크 및 메뉴 숨기기 (투명 망토 코드)
+# 🎨 [강력 모드] Streamlit 마크, 풋터, 헤더 강제 삭제
 hide_streamlit_style = """
             <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
+            /* 1. 상단 헤더 숨기기 */
+            header {visibility: hidden !important;}
+            [data-testid="stHeader"] {display: none !important;}
+            
+            /* 2. 하단 풋터(Hosted with Streamlit) 숨기기 */
+            footer {visibility: hidden !important; display: none !important;}
+            [data-testid="stFooter"] {display: none !important;}
+            
+            /* 3. 모바일 화면 여백 조정 (위쪽 붕 뜨는 것 방지) */
             .block-container {
-                padding-top: 1rem;
-                padding-bottom: 0rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
+                padding-top: 1rem !important;
+                padding-bottom: 5rem !important;
             }
+            
+            /* 4. 기타 메뉴 버튼 숨기기 */
+            #MainMenu {visibility: hidden !important; display: none !important;}
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -45,7 +52,6 @@ st.markdown("""
 VAR_YEAR_NUM = 1 
 MONTH_CONSTANTS = [0, 2, 5, 3, 4, 1, 6, 2, 5, 3, 4, 1, 6] 
 
-# 태어난 시에 따른 타고난 기질
 TIME_LUCK = {
     "자시 (23:00 ~ 01:00)": "남들보다 밤에 정신이 맑아지며, 창의적인 생각이 뛰어난 지략가입니다.",
     "축시 (01:00 ~ 03:00)": "묵묵히 한 우물을 파서 성공하는 끈기의 아이콘입니다. 말년 운이 좋습니다.",
@@ -135,7 +141,7 @@ if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
         st.warning("성함을 입력해주세요.")
     else:
         with st.spinner('사주를 분석하고 점괘를 뽑는 중입니다...'):
-            time.sleep(1.0)  # 여기 괄호를 수정했습니다!
+            time.sleep(1.0)
             
             # (1) 음력/양력 변환
             calendar = KoreanLunarCalendar()
@@ -183,31 +189,4 @@ if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
             
             if not result_row.empty:
                 title = result_row.iloc[0]['title']
-                content = result_row.iloc[0]['content']
-                
-                st.markdown(f"""
-                    <div class="result-box">
-                        <h3>{title}</h3>
-                        <p style="font-size:1.1rem; line-height:1.6;">{content}</p>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # [월별 운세]
-                st.write("") 
-                with st.expander("📅 2026년 월별 운세 흐름 (클릭)"):
-                    st.info("※ 1년의 흐름을 미리 파악하세요.")
-                    try:
-                        row_data = result_row.iloc[0]
-                        m_col1, m_col2 = st.columns(2)
-                        for i in range(1, 13):
-                            month_text = row_data[f'month_{i}']
-                            if i <= 6:
-                                with m_col1:
-                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
-                            else:
-                                with m_col2:
-                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
-                    except:
-                        st.warning("데이터 로딩 중...")
-            else:
-                st.error(f"결과를 찾을 수 없습니다. (코드: {final_code})")
+                content = result_row.iloc[0]['
