@@ -188,4 +188,25 @@ if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
                 st.markdown(f"""
                     <div class="result-box">
                         <h3>{title}</h3>
-                        <p style
+                        <p style="font-size:1.1rem; line-height:1.6;">{content}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                st.write("") 
+                with st.expander("📅 2026년 월별 운세 흐름 (클릭)"):
+                    st.info("※ 1년의 흐름을 미리 파악하세요.")
+                    try:
+                        row_data = result_row.iloc[0]
+                        m_col1, m_col2 = st.columns(2)
+                        for i in range(1, 13):
+                            month_text = row_data[f'month_{i}']
+                            if i <= 6:
+                                with m_col1:
+                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
+                            else:
+                                with m_col2:
+                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
+                    except:
+                        st.warning("데이터 로딩 중...")
+            else:
+                st.error(f"결과를 찾을 수 없습니다. (코드: {final_code})")
