@@ -82,4 +82,132 @@ st.write("---")
 col_img, col_input = st.columns([1, 2])
 
 with col_img:
-    st.image("
+    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712109.png", width=110)
+    st.caption("2026 붉은 말의 해")
+
+with col_input:
+    name = st.text_input("성함", placeholder="예: 홍길동")
+    
+    # 1. 양력/음력 선택
+    calendar_type = st.radio("생년월일 구분", ["양력", "음력"], horizontal=True)
+    
+    # 2. 날짜 입력
+    if calendar_type == "양력":
+        birth_date = st.date_input(
+            "양력 생년월일",
+            min_value=datetime(1930, 1, 1),
+            max_value=datetime(2025, 12, 31),
+            value=datetime(1975, 6, 15)
+        )
+        is_leap_month = False
+        input_year = birth_date.year
+        input_month = birth_date.month
+        input_day = birth_date.day
+        
+    else: # 음력
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            input_year = st.number_input("년(Year)", 1930, 2025, 1975)
+        with c2:
+            input_month = st.number_input("월(Month)", 1, 12, 1)
+        with c3:
+            input_day = st.number_input("일(Day)", 1, 30, 15)
+        
+        is_leap_month = st.checkbox("윤달(Leap Month) 입니까?")
+
+    # 3. 태어난 시
+    time_options = [
+        "모름",
+        "자시 (23:00 ~ 01:00)", "축시 (01:00 ~ 03:00)", "인시 (03:00 ~ 05:00)",
+        "묘시 (05:00 ~ 07:00)", "진시 (07:00 ~ 09:00)", "사시 (09:00 ~ 11:00)",
+        "오시 (11:00 ~ 13:00)", "미시 (13:00 ~ 15:00)", "신시 (15:00 ~ 17:00)",
+        "유시 (17:00 ~ 19:00)", "술시 (19:00 ~ 21:00)", "해시 (21:00 ~ 23:00)"
+    ]
+    birth_time = st.selectbox("태어난 시 (선택)", time_options)
+
+# --------------------------------------------------------------------------
+# [4] 계산 및 결과 출력
+# --------------------------------------------------------------------------
+if st.button("📜 2026년 무료 운세 보기", use_container_width=True):
+    if df is None:
+        st.error("⚠️ 데이터 파일(db.xlsx)이 없습니다.")
+    elif not name:
+        st.warning("성함을 입력해주세요.")
+    else:
+        with st.spinner('사주를 분석하고 점괘를 뽑는 중입니다...'):
+            time.sleep(1.0)  # 여기 괄호를 수정했습니다!
+            
+            # (1) 음력/양력 변환
+            calendar = KoreanLunarCalendar()
+            if calendar_type == "양력":
+                calendar.setSolarDate(input_year, input_month, input_day)
+                lunar_year = calendar.lunarYear
+                lunar_month = calendar.lunarMonth
+                lunar_day = calendar.lunarDay
+                display_msg = f"양력 {input_year}.{input_month}.{input_day}"
+            else:
+                lunar_year = input_year
+                lunar_month = input_month
+                lunar_day = input_day
+                leap_msg = "(윤달)" if is_leap_month else ""
+                display_msg = f"음력 {input_year}.{input_month}.{input_day} {leap_msg}"
+            
+            # (2) 토정비결 계산
+            age = 2026 - input_year + 1
+            upper = (age + VAR_YEAR_NUM) % 8
+            if upper == 0: upper = 8
+            
+            calc_month = lunar_month 
+            if calc_month <= 12: m_const = MONTH_CONSTANTS[calc_month]
+            else: m_const = 1
+            
+            middle = (calc_month + m_const) % 6
+            if middle == 0: middle = 6
+            
+            lower = (lunar_day + 1) % 3
+            if lower == 0: lower = 3
+            
+            final_code = f"{upper}{middle}{lower}"
+            result_row = df[df['code'] == final_code]
+            
+            # (3) 결과 보여주기
+            st.success(f"✅ {name}님 사주: [{display_msg}] / [{birth_time}]")
+            
+            # [시간 운세]
+            if birth_time in TIME_LUCK:
+                time_msg = TIME_LUCK[birth_time]
+                st.info(f"🕰️ **[태어난 시 풀이]** {time_msg}")
+            
+            # [메인 운세]
+            st.markdown("### 🔮 당신의 2026년 운세")
+            
+            if not result_row.empty:
+                title = result_row.iloc[0]['title']
+                content = result_row.iloc[0]['content']
+                
+                st.markdown(f"""
+                    <div class="result-box">
+                        <h3>{title}</h3>
+                        <p style="font-size:1.1rem; line-height:1.6;">{content}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # [월별 운세]
+                st.write("") 
+                with st.expander("📅 2026년 월별 운세 흐름 (클릭)"):
+                    st.info("※ 1년의 흐름을 미리 파악하세요.")
+                    try:
+                        row_data = result_row.iloc[0]
+                        m_col1, m_col2 = st.columns(2)
+                        for i in range(1, 13):
+                            month_text = row_data[f'month_{i}']
+                            if i <= 6:
+                                with m_col1:
+                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
+                            else:
+                                with m_col2:
+                                    st.markdown(f"<div class='month-text'><b>{i}월:</b> {month_text}</div>", unsafe_allow_html=True)
+                    except:
+                        st.warning("데이터 로딩 중...")
+            else:
+                st.error(f"결과를 찾을 수 없습니다. (코드: {final_code})")
